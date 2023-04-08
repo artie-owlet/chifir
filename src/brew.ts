@@ -2,6 +2,9 @@ import { AssertionError } from 'assert';
 import { deepStrictEqual, notDeepStrictEqual } from 'assert/strict';
 import { inspect } from 'util';
 
+export type First<T extends unknown[]> = T extends [infer U, ...unknown[]] ? U : never;
+export type Rest<T extends unknown[]> = T extends [unknown, ...infer U] ? U : never;
+
 export type Ctor<T> = {
     new (...args: any[]): T;
 };
@@ -17,13 +20,6 @@ export type TypeOfHelper = {
     'function': Function;
 };
 
-type BrewSame<B, T> =
-    B extends BrewGeneric<unknown> ? BrewGeneric<T> :
-        B extends BrewCall<unknown> ? BrewCall<T> :
-            B extends BrewGet<unknown> ? BrewGet<T> :
-                B extends BrewBase<unknown> ? BrewBase<T> : never;
-
-
 export function makeAsyncError(actual: unknown, message: string, stack: string): AssertionError {
     const err = new AssertionError({
         message,
@@ -33,23 +29,28 @@ export function makeAsyncError(actual: unknown, message: string, stack: string):
     return err;
 }
 
-class BrewBase<T> {
+type BrewSame<B, T, CtxList extends unknown[]> =
+    B extends BrewGeneric<unknown, unknown[]> ? BrewGeneric<T, CtxList> :
+        B extends BrewCall<unknown, unknown[]> ? BrewCall<T, CtxList> :
+            B extends BrewGet<unknown, unknown[]> ? BrewGet<T, CtxList> : never;
+
+class BrewBase<T, CtxList extends unknown[]> {
     public static readonly CHECK_FAILED = Symbol();
 
     constructor(
         private value: T,
-        private ctx: unknown,
+        private ctxList: CtxList,
         private stackStartFn: Function | string,
     ) {
     }
 
     protected brew<U>(value: U) {
-        return new (this.constructor as Ctor<BrewSame<this, U>>)(value, this.ctx, this.stackStartFn);
+        return new (this.constructor as Ctor<BrewSame<this, U, CtxList>>)(value, this.ctxList, this.stackStartFn);
     }
 
-    protected assert<R, C>(check: (v: T, ctx: unknown) => [R, C], message: string): [R, C] {
+    protected assert<R, C extends unknown[]>(check: (v: T, ctxList: CtxList) => [R, C], message: string): [R, C] {
         try {
-            return check(this.value, this.ctx);
+            return check(this.value, this.ctxList);
         } catch (err) {
             if (err === BrewBase.CHECK_FAILED || err instanceof AssertionError) {
                 throw this.makeError(message);
@@ -61,29 +62,29 @@ class BrewBase<T> {
     }
 
     protected is<R extends T>(check: (v: T) => boolean, message: string): R {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             if (!check(v)) {
                 throw BrewBase.CHECK_FAILED;
             }
-            return [v as R, ctx];
+            return [v as R, ctxList];
         }, message)[0];
     }
 
     protected assertNumeric(): T & (number | bigint) {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             if (typeof v !== 'number' && typeof v !== 'bigint') {
                 throw BrewBase.CHECK_FAILED;
             }
-            return [v, ctx];
+            return [v, ctxList];
         }, 'Expected to be a number or a bigint')[0];
     }
 
     protected assertObject(): T & object {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             if (v === null || typeof v !== 'object') {
                 throw BrewBase.CHECK_FAILED;
             }
-            return [v, ctx];
+            return [v, ctxList];
         }, 'Expected to be an object')[0];
     }
 
@@ -100,24 +101,24 @@ class BrewBase<T> {
     }
 }
 
-export class BrewGet<T> extends BrewBase<T> {
+export class BrewGet<T, CtxList extends unknown[]> extends BrewBase<T, CtxList> {
     public get exist(): NonNullable<T> {
         return this.is(v => v !== undefined && v !== null, 'Expected to be not null nor undefined');
     }
 }
 
-export class BrewCall<T> extends BrewBase<T>{
+export class BrewCall<T, CtxList extends unknown[]> extends BrewBase<T, CtxList>{
     public eq(expected: T): T {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             deepStrictEqual(v, expected);
-            return [v, ctx];
+            return [v, ctxList];
         }, `Expected to be equal to ${inspect(expected)}`)[0];
     }
 
     public ne(cmpValue: T): T {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             notDeepStrictEqual(v, cmpValue);
-            return [v, ctx];
+            return [v, ctxList];
         }, `Expected to be not equal to ${inspect(cmpValue)}`)[0];
     }
 
@@ -143,11 +144,11 @@ export class BrewCall<T> extends BrewBase<T>{
 
     public throws(...args: unknown[]): unknown {
         return this.brew(this.is<T & Function>(v => typeof v === 'function', 'Expected to be callable'))
-            .assert((v, ctx) => {
+            .assert((v, ctxList) => {
                 try {
-                    v.call(ctx, ...args);
+                    v.call(ctxList[0], ...args);
                 } catch (err) {
-                    return [err, undefined];
+                    return [err, []];
                 }
                 throw BrewBase.CHECK_FAILED;
             }, 'Expected to throw')[0];
@@ -158,29 +159,40 @@ export class BrewCall<T> extends BrewBase<T>{
             try {
                 v[key];
             } catch (err) {
-                return [err, undefined];
+                return [err, []];
             }
             throw BrewBase.CHECK_FAILED;
         }, `Expected to throw on accessing the ${inspect(key)} property`)[0];
     }
 }
 
-export class BrewGeneric<T> extends BrewBase<T> {
-    public prop<K extends keyof T>(key: K): [T[K], T] {
-        return this.brew(this.assertObject()).assert((v) => {
+export class BrewGeneric<T, CtxList extends unknown[]> extends BrewBase<T, CtxList> {
+    public prop<K extends keyof T>(key: K): [T[K], [T & object, ...CtxList]] {
+        return this.brew(this.assertObject()).assert((v, ctxList) => {
             if (!Object.hasOwn(v, key)) {
                 throw BrewBase.CHECK_FAILED;
             }
-            return [v[key], v];
+            const ctxListNew = [v, ...ctxList] as [T & object, ...CtxList];
+            return [v[key], ctxListNew];
         }, `Expected to have the ${inspect(key)} property`);
     }
 
+    public context(): [First<CtxList>, Rest<CtxList>] {
+        return this.assert((_, ctxList) => {
+            if (ctxList.length === 0) {
+                throw BrewBase.CHECK_FAILED;
+            }
+            const [v, ...ctxListNew] = ctxList;
+            return [v as First<CtxList>, ctxListNew as Rest<CtxList>];
+        }, 'The value has no context');
+    }
+
     public instanceOf<R>(ctor: Ctor<R>): R {
-        return this.assert((v, ctx) => {
+        return this.assert((v, ctxList) => {
             if (!(v instanceof ctor)) {
                 throw BrewBase.CHECK_FAILED;
             }
-            return [v as R, ctx];
+            return [v as R, ctxList];
         }, `Expected to be instance of ${ctor.name}`)[0];
     }
 
@@ -189,8 +201,8 @@ export class BrewGeneric<T> extends BrewBase<T> {
     }
 }
 
-type BrewGetOwnProps = Exclude<keyof BrewGet<unknown>, keyof BrewBase<unknown>>;
-type BrewCallOwnProps = Exclude<keyof BrewCall<unknown>, keyof BrewBase<unknown>>;
+type BrewGetOwnProps = Exclude<keyof BrewGet<unknown, unknown[]>, keyof BrewBase<unknown, unknown[]>>;
+type BrewCallOwnProps = Exclude<keyof BrewCall<unknown, unknown[]>, keyof BrewBase<unknown, unknown[]>>;
 export function setupChifir(
     proto: unknown,
     getterFactory: (key: BrewGetOwnProps) => (() => any),

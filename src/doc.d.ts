@@ -1,182 +1,196 @@
-import { Ctor, TypeOfHelper } from './brew';
+import { First, Rest, Ctor, TypeOfHelper } from './brew';
 
 /**
  * Assertion wrapper for the value
- * @typeParam T - the testing value type
+ * @typeParam T The testing value type
  */
-export declare class Chifir<T> {
+export declare class Chifir<T, CtxList extends unknown []> {
     /** @ignore */
-    constructor(value: T, ctx: unknown);
+    constructor(value: T, ctxList: CtxList);
 
     /**
-     * Asserts the value is not a null nor an undefined
+     * Asserts the value is neither null nor undefined
      */
-    exist: Chifir<NonNullable<T>>;
+    exist: Chifir<NonNullable<T>, CtxList>;
 
     /**
      * Asserts the value is strictly deep-equal to `expected`
      * @param expected 
      */
-    eq(expected: T): Chifir<T>;
+    eq(expected: T): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is not strictly deep-equal to `cmpValue`
      * @param expected 
      */
-    ne(cmpValue: T): Chifir<T>;
+    ne(cmpValue: T): Chifir<T, CtxList>;
 
     /**
      * Asserts the value and `expected` are the same
      * @param expected
      */
-    sameAs(expected: T): Chifir<T>;
+    sameAs(expected: T): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is strictly less than `n`
      * @param n
      */
-    lt(n: number | bigint): Chifir<T>;
+    lt(n: number | bigint): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is strictly greater than `n`
      * @param n
      */
-    gt(n: number | bigint): Chifir<T>;
+    gt(n: number | bigint): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is less than or equal to `n`
      * @param n
      */
-    le(n: number | bigint): Chifir<T>;
+    le(n: number | bigint): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is greater than or equal to `n`
      * @param n
      */
-    ge(n: number | bigint): Chifir<T>;
+    ge(n: number | bigint): Chifir<T, CtxList>;
 
     /**
      * Asserts that calling the value causes an exception to be thrown
      * @param args Arguments passed to the value
      * @returns Chifir wrapper for the thrown value
      */
-    throws(...args: unknown[]): Chifir<unknown>;
+    throws(...args: unknown[]): Chifir<unknown, []>;
 
     /**
      * Asserts that accessing the `key` property causes an exception to be thrown
      * @param key
      * @returns Chifir wrapper for the thrown value
      */
-    propThrows(key: keyof T): Chifir<unknown>;
+    propThrows(key: keyof T): Chifir<unknown, []>;
 
     /**
      * Asserts the value has own property `key`
      * @param key 
      * @returns Chifir wrapper for the property
      */
-    prop<K extends keyof T>(key: K): Chifir<T[K]>;
+    prop<K extends keyof T>(key: K): Chifir<T[K], [T & object, ...CtxList]>;
+
+    /**
+     * Returns Chifir wrapper for the context of the value acquired after calling {@link Chifir.prop | prop()}.
+     * ```ts
+     * expect(person()).prop('name').eq('John')
+     *     .context().prop('surname').eq('Doe');
+     * ```
+     */
+    context(): Chifir<First<CtxList>, Rest<CtxList>>;
 
     /**
      * Asserts the value is the instance of class `ctor`
      * @param ctor
      */
-    instanceOf<R>(ctor: Ctor<R>): Chifir<R>;
+    instanceOf<R>(ctor: Ctor<R>): Chifir<R, CtxList>;
 
     /**
      * Asserts the value is of the type `expected`
      * @param expected
      */
-    typeOf<K extends keyof TypeOfHelper>(expected: K): Chifir<TypeOfHelper[K]>;
+    typeOf<K extends keyof TypeOfHelper>(expected: K): Chifir<TypeOfHelper[K], CtxList>;
 }
 
 /**
  * Assertion wrapper for promise
- * @typeParam T - the testing value type
+ * @typeParam T The testing value type
  */
-export declare class ChifirAsync<T> {
+export declare class ChifirAsync<T, CtxList extends unknown []> {
     /** @ignore */
-    constructor(pvalue: PromiseLike<[T, unknown]>);
+    constructor(pvalue: PromiseLike<[T, CtxList]>);
 
     /**
-     * See {@link Chifir.exist}
+     * See {@link Chifir.exist | Chifir.exist}
      */
-    exist: ChifirAsync<NonNullable<T>>;
+    exist: ChifirAsync<NonNullable<T>, CtxList>;
 
     /**
-     * See {@link Chifir.eq}
+     * See {@link Chifir.eq | Chifir.eq}
      */
-    eq(expected: T): ChifirAsync<T>;
+    eq(expected: T): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.ne}
+     * See {@link Chifir.ne | Chifir.ne}
      */
-    ne(cmpValue: T): ChifirAsync<T>;
+    ne(cmpValue: T): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.sameAs}
+     * See {@link Chifir.sameAs | Chifir.sameAs}
      */
-    sameAs(expected: T): ChifirAsync<T>;
+    sameAs(expected: T): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.lt}
+     * See {@link Chifir.lt | Chifir.lt}
      */
-    lt(n: number | bigint): ChifirAsync<T>;
+    lt(n: number | bigint): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.gt}
+     * See {@link Chifir.gt | Chifir.gt}
      */
-    gt(n: number | bigint): ChifirAsync<T>;
+    gt(n: number | bigint): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.le}
+     * See {@link Chifir.le | Chifir.le}
      */
-    le(n: number | bigint): ChifirAsync<T>;
+    le(n: number | bigint): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.ge}
+     * See {@link Chifir.ge | Chifir.ge}
      */
-    ge(n: number | bigint): ChifirAsync<T>;
+    ge(n: number | bigint): ChifirAsync<T, CtxList>;
 
     /**
-     * See {@link Chifir.throws}
+     * See {@link Chifir.throws | Chifir.throws}
      */
-    throws(...args: unknown[]): ChifirAsync<unknown>;
+    throws(...args: unknown[]): ChifirAsync<unknown, []>;
 
     /**
-     * See {@link Chifir.propThrows}
+     * See {@link Chifir.propThrows | Chifir.propThrows}
      */
-    propThrows(key: keyof T): ChifirAsync<unknown>;
+    propThrows(key: keyof T): ChifirAsync<unknown, []>;
 
     /**
-     * See {@link Chifir.prop}
+     * See {@link Chifir.prop | Chifir.prop}
      */
-    prop<K extends keyof T>(key: K): ChifirAsync<T[K]>;
+    prop<K extends keyof T>(key: K): ChifirAsync<T[K], [T & object, ...CtxList]>;
 
     /**
-     * See {@link Chifir.instanceOf}
+     * See {@link Chifir.context | Chifir.context}
      */
-    instanceOf<R>(ctor: Ctor<R>): ChifirAsync<R>;
+    context(): ChifirAsync<First<CtxList>, Rest<CtxList>>;
 
     /**
-     * See {@link Chifir.typeOf}
+     * See {@link Chifir.instanceOf | Chifir.instanceOf}
      */
-    typeOf<K extends keyof TypeOfHelper>(expected: K): ChifirAsync<TypeOfHelper[K]>;
+    instanceOf<R>(ctor: Ctor<R>): ChifirAsync<R, CtxList>;
+
+    /**
+     * See {@link Chifir.typeOf | Chifir.typeOf}
+     */
+    typeOf<K extends keyof TypeOfHelper>(expected: K): ChifirAsync<TypeOfHelper[K], CtxList>;
 
     /**
      * Asserts the value resolves
      * @returns Chifir wrapper for the resolved value
      */
-    resolves: PromiseLike<Chifir<T>>;
+    resolves: PromiseLike<Chifir<T, CtxList>>;
 
     /**
      * Asserts the value rejects
      * @param cleanUp Handle for the resolved value (if assertion failed)
      * @returns ChifirAsync wrapper for the rejection result
      */
-    rejects(cleanUp?: (value: T) => void): ChifirAsync<unknown>;
+    rejects(cleanUp?: (value: T) => void): ChifirAsync<unknown, []>;
 
-    then<TResult1 = Chifir<T>, TResult2 = never>(
-        onfulfilled?: ((value: Chifir<T>) => TResult1 | PromiseLike<TResult1>) | null,
+    then<TResult1 = Chifir<T, CtxList>, TResult2 = never>(
+        onfulfilled?: ((value: Chifir<T, CtxList>) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
     ): PromiseLike<TResult1 | TResult2>;
 }
@@ -186,11 +200,11 @@ export declare class ChifirAsync<T> {
  * @param value
  * @returns Chifir wrapper for `value`
  */
-export function expect<T>(value: T): Chifir<T>;
+export function expect<T>(value: T): Chifir<T, []>;
 
 /**
  * Entry point for assertion in async mode
  * @param pvalue
  * @returns ChifirAsync wrapper for `pvalue`
  */
-export function expectAsync<T>(pvalue: PromiseLike<T>): ChifirAsync<T>;
+export function expectAsync<T>(pvalue: PromiseLike<T>): ChifirAsync<T, []>;

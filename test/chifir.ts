@@ -12,7 +12,7 @@ describe('expect()', () => {
     const TEST_OBJECT_WRONG = [ { a : 14 }, 'test' ];
     
     describe('.exist', () => {
-        it('should pass if the value is not null nor undefined', () => {
+        it('should pass if the value is neither null nor undefined', () => {
             expect({}).exist;
         });
 
@@ -96,7 +96,7 @@ describe('expect()', () => {
             expectFail(() => expect(13).lt(12));
         });
 
-        it('should fail if the value is not a number nor a bigint', () => {
+        it('should fail if the value is neither a number nor a bigint', () => {
             expectFail(() => expect('13').lt(14));
         });
     });
@@ -114,7 +114,7 @@ describe('expect()', () => {
             expectFail(() => expect(13).gt(14));
         });
 
-        it('should fail if the value is not a number nor a bigint', () => {
+        it('should fail if the value is neither a number nor a bigint', () => {
             expectFail(() => expect('13').gt(12));
         });
     });
@@ -132,7 +132,7 @@ describe('expect()', () => {
             expectFail(() => expect(13).le(12));
         });
 
-        it('should fail if the value is not a number nor a bigint', () => {
+        it('should fail if the value is neither a number nor a bigint', () => {
             expectFail(() => expect('13').le(14));
         });
     });
@@ -150,7 +150,7 @@ describe('expect()', () => {
             expectFail(() => expect(13).ge(14));
         });
 
-        it('should fail if the value is not a number nor a bigint', () => {
+        it('should fail if the value is neither a number nor a bigint', () => {
             expectFail(() => expect('13').ge(12));
         });
     });
@@ -233,6 +233,24 @@ describe('expect()', () => {
 
         it('should fail if the value is not an object', () => {
             expectFail(() => expect('test' as unknown as { a: unknown }).prop('a'));
+        });
+    });
+
+    describe('.context()', () => {
+        it('should return Chifir for the context of the value', () => {
+            class Test {
+                constructor(
+                    public foo: string,
+                ) {}
+            }
+            expect(new Test('bar')).prop('foo')
+                .context()
+                .instanceOf(Test);
+        });
+
+        it('should fail if the value has no context', () => {
+            expectFail(() => expect('no context').context())
+                .prop('message').eq('The value has no context');
         });
     });
 

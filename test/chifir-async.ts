@@ -21,6 +21,19 @@ describe('expectAsync', () => {
         });
     });
 
+    describe('.context()', () => {
+        it('should return ChifirAsync for the context of the value', async () => {
+            class Test {
+                constructor(
+                    public foo: string,
+                ) {}
+            }
+            await expectAsync(toAsync(new Test('bar'))).prop('foo')
+                .context()
+                .instanceOf(Test);
+        });
+    });
+
     describe('.instanceOf()', () => {
         class Test {}
         it('should pass if the value is an instance of the provided ctor', async () => {
@@ -80,7 +93,7 @@ describe('expectAsync', () => {
     });
 
     describe('.exist', () => {
-        it('should pass if the value is not null nor undefined', async () => {
+        it('should pass if the value is neither null nor undefined', async () => {
             await expectAsync(toAsync({})).exist;
         });
 
