@@ -1,0 +1,16 @@
+{
+  "entryPoints": [
+    "./src/doc.d.ts"
+  ],
+  "readme": "none",
+  "out": "./public",
+  "includeVersion": true,
+  "disableSources": true,
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "intentionallyNotExported": [
+    "Ctor",
+    "TypeOfHelper"
+  ]
+}
