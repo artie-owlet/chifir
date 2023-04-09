@@ -56,6 +56,12 @@ export declare class Chifir<T, CtxList extends unknown []> {
     ge(cmpValue: Comparable<T>): Chifir<T, CtxList>;
 
     /**
+     * Asserts the value matches regexp
+     * @param re
+     */
+    match(re: RegExp): Chifir<T & string, CtxList>;
+
+    /**
      * Asserts that calling the value causes an exception to be thrown
      * @param args Arguments passed to the value
      * @returns Chifir wrapper for the thrown value
@@ -145,6 +151,11 @@ export declare class ChifirAsync<T, CtxList extends unknown []> {
      * See {@link Chifir.ge | Chifir.ge}
      */
     ge(cmpValue: Comparable<T>): ChifirAsync<T, CtxList>;
+
+    /**
+     * See {@link Chifir.match | Chifir.match}
+     */
+    match(re: RegExp): ChifirAsync<T & string, CtxList>;
 
     /**
      * See {@link Chifir.throws | Chifir.throws}
