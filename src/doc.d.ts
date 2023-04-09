@@ -1,4 +1,4 @@
-import { First, Rest, Ctor, TypeOfHelper } from './brew';
+import { First, Rest, Comparable, Ctor, TypeOfHelper } from './brew';
 
 /**
  * Assertion wrapper for the value
@@ -35,25 +35,25 @@ export declare class Chifir<T, CtxList extends unknown []> {
      * Asserts the value is strictly less than `n`
      * @param n
      */
-    lt(n: number | bigint): Chifir<T, CtxList>;
+    lt(cmpValue: Comparable<T>): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is strictly greater than `n`
      * @param n
      */
-    gt(n: number | bigint): Chifir<T, CtxList>;
+    gt(cmpValue: Comparable<T>): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is less than or equal to `n`
      * @param n
      */
-    le(n: number | bigint): Chifir<T, CtxList>;
+    le(cmpValue: Comparable<T>): Chifir<T, CtxList>;
 
     /**
      * Asserts the value is greater than or equal to `n`
      * @param n
      */
-    ge(n: number | bigint): Chifir<T, CtxList>;
+    ge(cmpValue: Comparable<T>): Chifir<T, CtxList>;
 
     /**
      * Asserts that calling the value causes an exception to be thrown
@@ -89,7 +89,7 @@ export declare class Chifir<T, CtxList extends unknown []> {
      * Asserts the value is the instance of class `ctor`
      * @param ctor
      */
-    instanceOf<R>(ctor: Ctor<R>): Chifir<R, CtxList>;
+    instanceOf<R>(ctor: Ctor<R>): Chifir<T & R, CtxList>;
 
     /**
      * Asserts the value is of the type `expected`
@@ -129,22 +129,22 @@ export declare class ChifirAsync<T, CtxList extends unknown []> {
     /**
      * See {@link Chifir.lt | Chifir.lt}
      */
-    lt(n: number | bigint): ChifirAsync<T, CtxList>;
+    lt(cmpValue: Comparable<T>): ChifirAsync<T, CtxList>;
 
     /**
      * See {@link Chifir.gt | Chifir.gt}
      */
-    gt(n: number | bigint): ChifirAsync<T, CtxList>;
+    gt(cmpValue: Comparable<T>): ChifirAsync<T, CtxList>;
 
     /**
      * See {@link Chifir.le | Chifir.le}
      */
-    le(n: number | bigint): ChifirAsync<T, CtxList>;
+    le(cmpValue: Comparable<T>): ChifirAsync<T, CtxList>;
 
     /**
      * See {@link Chifir.ge | Chifir.ge}
      */
-    ge(n: number | bigint): ChifirAsync<T, CtxList>;
+    ge(cmpValue: Comparable<T>): ChifirAsync<T, CtxList>;
 
     /**
      * See {@link Chifir.throws | Chifir.throws}
@@ -169,7 +169,7 @@ export declare class ChifirAsync<T, CtxList extends unknown []> {
     /**
      * See {@link Chifir.instanceOf | Chifir.instanceOf}
      */
-    instanceOf<R>(ctor: Ctor<R>): ChifirAsync<R, CtxList>;
+    instanceOf<R>(ctor: Ctor<R>): ChifirAsync<T & R, CtxList>;
 
     /**
      * See {@link Chifir.typeOf | Chifir.typeOf}

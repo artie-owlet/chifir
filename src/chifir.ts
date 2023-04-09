@@ -30,11 +30,11 @@ export class ChifirImpl<T, CtxList extends unknown[]> {
         ) as Chifir<First<CtxList>, Rest<CtxList>>;
     }
 
-    public instanceOf<R>(ctor: Ctor<R>): Chifir<R, CtxList> {
+    public instanceOf<R>(ctor: Ctor<R>): Chifir<T & R, CtxList> {
         return new ChifirImpl(
             new BrewGeneric(this.value, this.ctxList, this.instanceOf).instanceOf(ctor),
             this.ctxList,
-        ) as Chifir<R, CtxList>;
+        ) as Chifir<T & R, CtxList>;
     }
 
     public typeOf<K extends keyof TypeOfHelper>(expected: K): Chifir<TypeOfHelper[K], CtxList> {

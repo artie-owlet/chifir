@@ -12,6 +12,7 @@
   "intentionallyNotExported": [
     "First",
     "Rest",
+    "Comparable",
     "Ctor",
     "TypeOfHelper"
   ]

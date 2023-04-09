@@ -84,74 +84,72 @@ describe('expect()', () => {
     });
 
     describe('.lt()', () => {
-        it('should pass on "actual < expected"', () => {
+        it('should pass if "actual < expected"', () => {
             expect(13).lt(14);
         });
 
-        it('should fail on "actual = expected"', () => {
+        it('should fail if "actual = expected"', () => {
             expectFail(() => expect(13).lt(13));
         });
 
-        it('should fail on "actual > expected"', () => {
+        it('should fail if "actual > expected"', () => {
             expectFail(() => expect(13).lt(12));
-        });
-
-        it('should fail if the value is neither a number nor a bigint', () => {
-            expectFail(() => expect('13').lt(14));
         });
     });
 
     describe('.gt()', () => {
-        it('should pass on "actual < expected"', () => {
+        it('should pass if "actual < expected"', () => {
             expect(13).gt(12);
         });
 
-        it('should fail on "actual = expected"', () => {
+        it('should fail if "actual = expected"', () => {
             expectFail(() => expect(13).gt(13));
         });
 
-        it('should fail on "actual > expected"', () => {
+        it('should fail if "actual > expected"', () => {
             expectFail(() => expect(13).gt(14));
-        });
-
-        it('should fail if the value is neither a number nor a bigint', () => {
-            expectFail(() => expect('13').gt(12));
         });
     });
 
     describe('.le()', () => {
-        it('should pass on "actual < expected"', () => {
+        it('should pass if "actual < expected"', () => {
             expect(13).le(14);
         });
 
-        it('should pass on "actual = expected"', () => {
+        it('should pass if "actual = expected"', () => {
             expect(13).le(13);
         });
 
-        it('should fail on "actual > expected"', () => {
+        it('should fail if "actual > expected"', () => {
             expectFail(() => expect(13).le(12));
-        });
-
-        it('should fail if the value is neither a number nor a bigint', () => {
-            expectFail(() => expect('13').le(14));
         });
     });
 
     describe('.ge()', () => {
-        it('should pass on "actual < expected"', () => {
+        it('should pass if "actual < expected"', () => {
             expect(13).ge(12);
         });
 
-        it('should pass on "actual = expected"', () => {
+        it('should pass if "actual = expected"', () => {
             expect(13).ge(13);
         });
 
-        it('should fail on "actual > expected"', () => {
+        it('should fail if "actual > expected"', () => {
             expectFail(() => expect(13).ge(14));
         });
+    });
 
-        it('should fail if the value is neither a number nor a bigint', () => {
-            expectFail(() => expect('13').ge(12));
+    describe('match()', () => {
+        it('should pass if the value matches regexp', () => {
+            expect('abracadabra').match(/(ab|ac|ad)/);
+        });
+
+        it('should fail if the value does not match regexp', () => {
+            expectFail(() => expect('abracadabra').match(/abc/));
+        });
+
+        it('should fail if the value is not a string', () => {
+            expectFail(() => expect(12345).match(/123/));
         });
     });
 

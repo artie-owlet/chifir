@@ -44,7 +44,7 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
         ) as ChifirAsync<First<CtxList>, Rest<CtxList>>;
     }
 
-    public instanceOf<R>(ctor: Ctor<R>): ChifirAsync<R, CtxList> {
+    public instanceOf<R>(ctor: Ctor<R>): ChifirAsync<T & R, CtxList> {
         const stack = getStack(this.instanceOf);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
@@ -53,7 +53,7 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
                     ctxList,
                 ];
             })
-        ) as ChifirAsync<R, CtxList>;
+        ) as ChifirAsync<T & R, CtxList>;
     }
 
     public typeOf<K extends keyof TypeOfHelper>(expected: K): ChifirAsync<TypeOfHelper[K], CtxList> {
