@@ -3,6 +3,7 @@
 [![build](https://github.com/artie-owlet/chifir/actions/workflows/build.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/build.yaml)
 [![test](https://github.com/artie-owlet/chifir/actions/workflows/test.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/test.yaml)
 [![lint](https://github.com/artie-owlet/chifir/actions/workflows/lint.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/lint.yaml)
+[![package-version](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/artie-owlet/efb3c17b62d57a444d7d6a505636ffa2/raw/chifir-package-version.json)](https://www.npmjs.com/package/@artie-owlet/chifir)
 
 Assertion library for Node.js.
 
