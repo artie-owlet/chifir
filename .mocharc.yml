@@ -1,5 +1,5 @@
 extension: ['ts']
-forbid-pending: true
 recursive: true
+reporter: dot
 require:
 - ts-node/register/transpile-only

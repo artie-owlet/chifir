@@ -1,8 +1,8 @@
 # chifir
 
-![CI](https://github.com/artie-owlet/chifir/actions/workflows/ci.yaml/badge.svg)
-![Coverage](https://github.com/artie-owlet/chifir/actions/workflows/coverage.yaml/badge.svg)
-![Lint](https://github.com/artie-owlet/chifir/actions/workflows/lint.yaml/badge.svg)
+[![build](https://github.com/artie-owlet/chifir/actions/workflows/build.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/build.yaml)
+[![test](https://github.com/artie-owlet/chifir/actions/workflows/test.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/test.yaml)
+[![lint](https://github.com/artie-owlet/chifir/actions/workflows/lint.yaml/badge.svg)](https://github.com/artie-owlet/chifir/actions/workflows/lint.yaml)
 
 Assertion library for Node.js.
 

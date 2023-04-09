@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://json.schemastore.org/mocharc.json
+extension: ['ts']
+recursive: true
+reporter: dot
+require:
+- ts-node/register/transpile-only
+bail: true
+forbid-only: true
+forbid-pending: true
+parallel: true
