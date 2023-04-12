@@ -22,26 +22,22 @@ export type TypeOfHelper = {
     'function': Function;
 };
 
-function an(word: string): string {
-    return ['a', 'e', 'i', 'o', 'u'].includes(word.charAt(0)) ? `an ${word}` : `a ${word}`;
-}
-
-function orList(words: string[]): string {
-    if (words.length <= 2) {
-        return words.join(' or ');
-    }
-    /* c8 ignore start */
-    const last = words.pop() as string;
-    return [words.join(', '), last].join(', or ');
-}
-/* c8 ignore stop */
-
-export function makeAsyncError(actual: unknown, message: string, stack: string): AssertionError {
-    const err = new AssertionError({
-        message,
-        actual,
+export function prepareError(stackStartFn: Function): AssertionError {
+    return new AssertionError({
+        message: '',
+        stackStartFn,
     });
-    err.stack = `${message}\n${stack}`;
+}
+
+export function makeError(err: AssertionError, message: string, actual: any): AssertionError {
+    err.message = `Assertion failed: ${message}\nactual = ${inspect(actual, {
+        depth: 1,
+        breakLength: Infinity
+    })}`;
+    err.stack = [
+        err.message,
+        err.stack?.split('\n').slice(1).join('\n'),
+    ].join('\n');
     return err;
 }
 
@@ -56,21 +52,22 @@ class BrewBase<T, CtxList extends unknown[]> {
     constructor(
         private value: T,
         private ctxList: CtxList,
-        private stackStartFn: Function | string,
+        private error: AssertionError,
     ) {
     }
 
     protected brew<U>(value: U, ctxList?: CtxList) {
         return new (this.constructor as Ctor<BrewSame<this, U, CtxList>>)(
-            value, ctxList ?? this.ctxList, this.stackStartFn);
+            value, ctxList ?? this.ctxList, this.error);
     }
 
-    protected assert<R, C extends unknown[]>(check: (v: T, ctxList: CtxList) => [R, C], message: string): [R, C] {
+    protected assert<R, C extends unknown[]>(check: (v: T, ctxList: CtxList) => [R, C], scope: Function | string
+    ): [R, C] {
         try {
             return check(this.value, this.ctxList);
         } catch (err) {
             if (err === BrewBase.CHECK_FAILED || err instanceof AssertionError) {
-                throw this.makeError(message);
+                throw this.makeError(typeof scope === 'function' ? `.${scope.name}()` : scope);
             }
             /* c8 ignore next */
             throw err;
@@ -78,13 +75,13 @@ class BrewBase<T, CtxList extends unknown[]> {
         }
     }
 
-    protected is<R extends T>(check: (v: T) => boolean, message: string): R {
+    protected is<R extends T>(check: (v: T) => boolean, scope: Function | string): R {
         return this.assert((v, ctxList) => {
             if (!check(v)) {
                 throw BrewBase.CHECK_FAILED;
             }
             return [v as R, ctxList];
-        }, message)[0];
+        }, scope)[0];
     }
 
     protected isTypeOf<K extends keyof TypeOfHelper>(types: K[]): T & TypeOfHelper[K] {
@@ -93,25 +90,17 @@ class BrewBase<T, CtxList extends unknown[]> {
                 throw BrewBase.CHECK_FAILED;
             }
             return [v, ctxList] as [T & TypeOfHelper[K], CtxList];
-        }, `Expected to be ${orList(types.map(t => an(t)))}`)[0];
+        }, `Not typeof ${types}`)[0];
     }
 
     private makeError(message: string): AssertionError {
-        if (typeof this.stackStartFn === 'function') {
-            return new AssertionError({
-                message,
-                actual: this.value,
-                stackStartFn: this.stackStartFn,
-            });
-        } else {
-            return makeAsyncError(this.value, message, this.stackStartFn);
-        }
+        return makeError(this.error, message, this.value);
     }
 }
 
 export class BrewGet<T, CtxList extends unknown[]> extends BrewBase<T, CtxList> {
     public get exist(): NonNullable<T> {
-        return this.is(v => v !== undefined && v !== null, 'Expected to be not null nor undefined');
+        return this.is(v => v !== undefined && v !== null, '.exist');
     }
 }
 
@@ -120,42 +109,42 @@ export class BrewCall<T, CtxList extends unknown[]> extends BrewBase<T, CtxList>
         return this.assert((v, ctxList) => {
             deepStrictEqual(v, expected);
             return [v, ctxList];
-        }, `Expected to be equal to ${inspect(expected)}`)[0];
+        }, this.eq)[0];
     }
 
     public ne(cmpValue: T): T {
         return this.assert((v, ctxList) => {
             notDeepStrictEqual(v, cmpValue);
             return [v, ctxList];
-        }, `Expected to be not equal to ${inspect(cmpValue)}`)[0];
+        }, this.ne)[0];
     }
 
     public sameAs(expected: T): T {
-        return this.is(v => Object.is(v, expected), `Expected to be the same as ${inspect(expected)}`);
+        return this.is(v => Object.is(v, expected), this.sameAs);
     }
 
     public lt(cmpValue: Comparable<T>): T {
-        return this.is(v => v < cmpValue, `Expected to be strictly less than ${inspect(cmpValue)}`);
+        return this.is(v => v < cmpValue, this.lt);
     }
 
     public gt(cmpValue: Comparable<T>): T {
-        return this.is(v => v > cmpValue, `Expected to be strictly greater than ${inspect(cmpValue)}`);
+        return this.is(v => v > cmpValue, this.gt);
     }
 
     public le(cmpValue: Comparable<T>): T {
-        return this.is(v => v <= cmpValue, `Expected to be less than or equal to ${inspect(cmpValue)}`);
+        return this.is(v => v <= cmpValue, this.le);
     }
 
     public ge(cmpValue: Comparable<T>): T {
-        return this.is(v => v >= cmpValue, `Expected to be greater than or equal to ${inspect(cmpValue)}`);
+        return this.is(v => v >= cmpValue, this.ge);
     }
 
     public match(re: RegExp): T & string {
-        return this.brew(this.isTypeOf(['string'])).is(v => re.test(v), `Expected to match ${re}`);
+        return this.brew(this.isTypeOf(['string'])).is(v => re.test(v), this.match);
     }
 
     public throws(...args: unknown[]): unknown {
-        return this.brew(this.is<T & Function>(v => typeof v === 'function', 'Expected to be callable'))
+        return this.brew(this.is<T & Function>(v => typeof v === 'function', 'Not callable'))
             .assert((v, ctxList) => {
                 try {
                     v.call(ctxList[0], ...args);
@@ -163,7 +152,7 @@ export class BrewCall<T, CtxList extends unknown[]> extends BrewBase<T, CtxList>
                     return [err, []];
                 }
                 throw BrewBase.CHECK_FAILED;
-            }, 'Expected to throw')[0];
+            }, this.throws)[0];
     }
 
     public propThrows(key: keyof T): unknown {
@@ -174,7 +163,7 @@ export class BrewCall<T, CtxList extends unknown[]> extends BrewBase<T, CtxList>
                 return [err, []];
             }
             throw BrewBase.CHECK_FAILED;
-        }, `Expected to throw on accessing the ${inspect(key)} property`)[0];
+        }, this.propThrows)[0];
     }
 }
 
@@ -186,7 +175,7 @@ export class BrewGeneric<T, CtxList extends unknown[]> extends BrewBase<T, CtxLi
             }
             const ctxListNew = [v, ...ctxList] as [T & object, ...CtxList];
             return [v[key], ctxListNew];
-        }, `Expected to have the ${inspect(key)} property`);
+        }, this.prop);
     }
 
     public context(): [First<CtxList>, Rest<CtxList>] {
@@ -196,7 +185,7 @@ export class BrewGeneric<T, CtxList extends unknown[]> extends BrewBase<T, CtxLi
             }
             const [v, ...ctxListNew] = ctxList;
             return [v as First<CtxList>, ctxListNew as Rest<CtxList>];
-        }, 'The value has no context');
+        }, this.context);
     }
 
     public instanceOf<R>(ctor: Ctor<R>): T & R {
@@ -205,11 +194,11 @@ export class BrewGeneric<T, CtxList extends unknown[]> extends BrewBase<T, CtxLi
                 throw BrewBase.CHECK_FAILED;
             }
             return [v, ctxList];
-        }, `Expected to be an instance of ${ctor.name}`)[0];
+        }, this.instanceOf)[0];
     }
 
     public typeOf<K extends keyof TypeOfHelper>(expected: K): TypeOfHelper[K] {
-        return this.is(v => typeof v === expected, `Expected to be ${an(expected)}`) as TypeOfHelper[K];
+        return this.is(v => typeof v === expected, this.typeOf) as TypeOfHelper[K];
     }
 }
 

@@ -58,9 +58,7 @@ overrides:
       - error
       - argsIgnorePattern: "^_[0-9A-Za-z]*$"
       "@typescript-eslint/restrict-template-expressions":
-      - error
-      - allowBoolean: true
-        allowRegExp: true
+      - off
       "@typescript-eslint/semi":
       - error
       "@typescript-eslint/unbound-method":

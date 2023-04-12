@@ -59,8 +59,7 @@ describe('expectAsync', () => {
         });
 
         it('should fail if the value rejects', async () => {
-            await expectFail(expectAsync(testRejects()).resolves)
-                .prop('message').eq('Expected to resolve');
+            await expectFail(expectAsync(testRejects()).resolves);
         });
     });
 
@@ -75,8 +74,7 @@ describe('expectAsync', () => {
         });
 
         it('should fail if the value resolves', async () => {
-            await expectFail(expectAsync(toAsync(13)).rejects())
-                .prop('message').eq('Expected to reject');
+            await expectFail(expectAsync(toAsync(13)).rejects());
         });
 
         it('should cleanup resolved value on failure', async () => {

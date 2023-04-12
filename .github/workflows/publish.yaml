@@ -16,12 +16,3 @@ jobs:
       - run: yarn npm publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: echo "PKG_VERSION=$(jq -r '.version' ./package.json)" >> $GITHUB_ENV
-      - uses: schneegans/dynamic-badges-action@v1.6.0
-        with:
-          auth: ${{ secrets.PACKAGE_VERSION_GIST }}
-          gistID: efb3c17b62d57a444d7d6a505636ffa2
-          filename: chifir-package-version.json
-          label: latest
-          message: v${{ env.PKG_VERSION }}
-          color: success

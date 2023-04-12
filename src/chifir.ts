@@ -2,6 +2,7 @@ import {
     BrewGet, BrewCall, BrewGeneric, setupChifir,
     First, Rest,
     Ctor, TypeOfHelper,
+    prepareError,
 } from './brew';
 
 type ChifirFromBrew<T, CtxList extends unknown[]> = {
@@ -20,26 +21,26 @@ export class ChifirImpl<T, CtxList extends unknown[]> {
 
     public prop<K extends keyof T>(key: K): Chifir<T[K], [T & object, ...CtxList]> {
         return new ChifirImpl(
-            ...(new BrewGeneric(this.value, this.ctxList, this.prop).prop(key))
+            ...(new BrewGeneric(this.value, this.ctxList, prepareError(this.prop)).prop(key))
         ) as Chifir<T[K], [T & object, ...CtxList]>;
     }
 
     public context(): Chifir<First<CtxList>, Rest<CtxList>> {
         return new ChifirImpl(
-            ...(new BrewGeneric(this.value, this.ctxList, this.context).context())
+            ...(new BrewGeneric(this.value, this.ctxList, prepareError(this.context)).context())
         ) as Chifir<First<CtxList>, Rest<CtxList>>;
     }
 
     public instanceOf<R>(ctor: Ctor<R>): Chifir<T & R, CtxList> {
         return new ChifirImpl(
-            new BrewGeneric(this.value, this.ctxList, this.instanceOf).instanceOf(ctor),
+            new BrewGeneric(this.value, this.ctxList, prepareError(this.instanceOf)).instanceOf(ctor),
             this.ctxList,
         ) as Chifir<T & R, CtxList>;
     }
 
     public typeOf<K extends keyof TypeOfHelper>(expected: K): Chifir<TypeOfHelper[K], CtxList> {
         return new ChifirImpl(
-            new BrewGeneric(this.value, this.ctxList, this.prop).typeOf(expected),
+            new BrewGeneric(this.value, this.ctxList, prepareError(this.prop)).typeOf(expected),
             this.ctxList,
         ) as Chifir<TypeOfHelper[K], CtxList>;
     }
@@ -47,14 +48,16 @@ export class ChifirImpl<T, CtxList extends unknown[]> {
 
 setupChifir(ChifirImpl.prototype, (key) => {
     return function(this: ChifirImpl<unknown, unknown[]>) {
-        const brew = new BrewGet(this.value, this.ctxList,
-            Object.getOwnPropertyDescriptor(ChifirImpl.prototype, key)?.get as Function);
+        const brew = new BrewGet(this.value, this.ctxList, prepareError(
+            Object.getOwnPropertyDescriptor(ChifirImpl.prototype, key)?.get as Function
+        ));
         return new ChifirImpl(brew[key], this.ctxList);
     };
 }, (key) => {
     return function(this: ChifirImpl<unknown, unknown[]>, ...args: unknown[]) {
-        const brew = new BrewCall(this.value, this.ctxList,
-            Object.getOwnPropertyDescriptor(ChifirImpl.prototype, key)?.value as Function);
+        const brew = new BrewCall(this.value, this.ctxList, prepareError(
+            Object.getOwnPropertyDescriptor(ChifirImpl.prototype, key)?.value as Function
+        ));
         return new ChifirImpl(
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore

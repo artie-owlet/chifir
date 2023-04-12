@@ -2,7 +2,7 @@ import {
     BrewGet, BrewCall, BrewGeneric, setupChifir,
     First, Rest,
     Ctor, TypeOfHelper,
-    makeAsyncError,
+    prepareError, makeError,
 } from './brew';
 import { Chifir, ChifirImpl } from './chifir';
 
@@ -13,13 +13,6 @@ type ChifirAsyncFromBrew<T, CtxList extends unknown[]> = {
         (...args: Parameters<BrewCall<T, CtxList>[K]>) => ChifirAsync<ReturnType<BrewCall<T, CtxList>[K]>, CtxList>;
 };
 
-function getStack(fn: Function): string {
-    const stackCatcher = {} as { stack: string };
-    Error.captureStackTrace(stackCatcher, fn);
-    const { stack } = stackCatcher;
-    return stack.split('\n')[1];
-}
-
 class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     constructor(
         public readonly pvalue: PromiseLike<[T, CtxList]>,
@@ -27,29 +20,29 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     }
 
     public prop<K extends keyof T>(key: K): ChifirAsync<T[K], [T & object, ...CtxList]> {
-        const stack = getStack(this.prop);
+        const err = prepareError(this.prop);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
-                return new BrewGeneric(v, ctxList, stack).prop(key);
+                return new BrewGeneric(v, ctxList, err).prop(key);
             })
         ) as ChifirAsync<T[K], [T & object, ...CtxList]>;
     }
 
     public context(): ChifirAsync<First<CtxList>, Rest<CtxList>> {
-        const stack = getStack(this.context);
+        const err = prepareError(this.context);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
-                return new BrewGeneric(v, ctxList, stack).context();
+                return new BrewGeneric(v, ctxList, err).context();
             })
         ) as ChifirAsync<First<CtxList>, Rest<CtxList>>;
     }
 
     public instanceOf<R>(ctor: Ctor<R>): ChifirAsync<T & R, CtxList> {
-        const stack = getStack(this.instanceOf);
+        const err = prepareError(this.instanceOf);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
                 return [
-                    new BrewGeneric(v, ctxList, stack).instanceOf(ctor),
+                    new BrewGeneric(v, ctxList, err).instanceOf(ctor),
                     ctxList,
                 ];
             })
@@ -57,11 +50,11 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     }
 
     public typeOf<K extends keyof TypeOfHelper>(expected: K): ChifirAsync<TypeOfHelper[K], CtxList> {
-        const stack = getStack(this.typeOf);
+        const err = prepareError(this.typeOf);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
                 return [
-                    new BrewGeneric(v, ctxList, stack).typeOf(expected),
+                    new BrewGeneric(v, ctxList, err).typeOf(expected),
                     ctxList,
                 ];
             })
@@ -69,19 +62,20 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     }
 
     public get resolves(): PromiseLike<Chifir<T, CtxList>> {
-        const stack = getStack(Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, 'resolves')?.get as Function);
+        const err = prepareError(
+            Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, 'resolves')?.get as Function);
         return this.then(c => c, (reason) => {
-            throw makeAsyncError(reason, 'Expected to resolve', stack);
+            throw makeError(err, '.resolve()', reason);
         });
     }
 
     public rejects(cleanUp?: (value: T) => void): ChifirAsync<unknown, []> {
-        const stack = getStack(this.rejects);
+        const err = prepareError(this.rejects);
         return new ChifirAsyncImpl(this.pvalue.then(([value, _]) => {
             if (cleanUp) {
                 cleanUp(value);
             }
-            throw makeAsyncError(undefined, 'Expected to reject', stack);
+            throw makeError(err, '.reject()', undefined);
         }, (reason) => {
             return [reason, []];
         })) as ChifirAsync<unknown, []>;
@@ -102,20 +96,20 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
 
 setupChifir(ChifirAsyncImpl.prototype, (key) => {
     return function(this: ChifirAsyncImpl<unknown, unknown[]>) {
-        const stack = getStack(Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, key)?.get as Function);
+        const err = prepareError(Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, key)?.get as Function);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) =>{
-                const brew = new BrewGet(v, ctxList, stack);
+                const brew = new BrewGet(v, ctxList, err);
                 return [brew[key], ctxList];
             })
         );
     };
 }, (key) => {
     return function(this: ChifirAsyncImpl<unknown, unknown[]>, ...args: unknown[]) {
-        const stack = getStack(Object.getOwnPropertyDescriptor(ChifirImpl.prototype, key)?.value as Function);
+        const err = prepareError(Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, key)?.value as Function);
         return new ChifirAsyncImpl(
             this.pvalue.then(([v, ctxList]) => {
-                const brew = new BrewCall(v, ctxList, stack);
+                const brew = new BrewCall(v, ctxList, err);
                 return [
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
