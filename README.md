@@ -24,7 +24,7 @@ npm install -D @artie-owlet/chifir
 ## Usage
 
 ```ts
-import { expect } from '@artie-owlet/chifir';
+import { expect, expectAsync } from '@artie-owlet/chifir';
 
 import { testMe, Result } from '../src/api';
 import { probablyFail } from '../src/async-api';
