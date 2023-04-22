@@ -64,7 +64,9 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     public get resolves(): PromiseLike<Chifir<T, CtxList>> {
         const err = prepareError(
             Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, 'resolves')?.get as Function);
-        return this.then(c => c, (reason) => {
+        return this.pvalue.then(([value, ctx]) => {
+            return new ChifirImpl(value, ctx) as Chifir<T, CtxList>;
+        }, (reason) => {
             throw makeError(err, '.resolve()', reason);
         });
     }
@@ -81,16 +83,11 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
         })) as ChifirAsync<unknown, []>;
     }
 
-    public then<TResult1 = Chifir<T, CtxList>, TResult2 = never>(
-        onfulfilled?: ((value: Chifir<T, CtxList>) => TResult1 | PromiseLike<TResult1>) | null,
+    public then<TResult1 = void, TResult2 = never>(
+        onfulfilled?: (() => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
     ): PromiseLike<TResult1 | TResult2> {
-        return this.pvalue.then(([value, ctxList]) => {
-            if (onfulfilled) {
-                return onfulfilled(new ChifirImpl(value, ctxList) as Chifir<T, CtxList>);
-            }
-            return new ChifirImpl(value, ctxList) as TResult1;
-        }, onrejected);
+        return this.pvalue.then(onfulfilled, onrejected);
     }
 }
 
