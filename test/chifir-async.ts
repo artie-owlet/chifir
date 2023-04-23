@@ -1,11 +1,9 @@
 import { AssertionError } from 'assert';
 import { setImmediate } from 'timers/promises';
-import { expect, expectAsync } from '../src';
+import { expect } from '../src';
 
-type ChifirAsync<T> = ReturnType<typeof expectAsync<T>>;
-
-function expectFail(res: PromiseLike<unknown>): ChifirAsync<AssertionError> {
-    return expectAsync(res).rejects()
+function expectFail(res: PromiseLike<void>) {
+    return expect(res).eventually.rejects()
         .instanceOf(AssertionError);
 }
 
@@ -14,10 +12,18 @@ async function toAsync<T>(v: T): Promise<T> {
     return v;
 }
 
-describe('expectAsync', () => {
+describe('expect().eventually', () => {
+    it('should fail if the value is not PromiseLike', () => {
+        function probablyAsync(v: number, isAsync: boolean) {
+            return isAsync ? toAsync(v) : v;
+        }
+        expect(() => expect(probablyAsync(13, false)).eventually.eq(13)).throws()
+            .instanceOf(AssertionError);
+    });
+
     describe('.prop()', () => {
         it('should return ChifirAsync for the provided property', async () => {
-            await expectAsync(toAsync({ a: 13 })).prop('a').eq(13);
+            await expect(toAsync({ a: 13 })).eventually.prop('a').eq(13);
         });
     });
 
@@ -28,7 +34,7 @@ describe('expectAsync', () => {
                     public foo: string,
                 ) {}
             }
-            await expectAsync(toAsync(new Test('bar'))).prop('foo')
+            await expect(toAsync(new Test('bar'))).eventually.prop('foo')
                 .context()
                 .instanceOf(Test);
         });
@@ -37,13 +43,13 @@ describe('expectAsync', () => {
     describe('.instanceOf()', () => {
         class Test {}
         it('should pass if the value is an instance of the provided ctor', async () => {
-            await expectAsync(toAsync(new Test())).instanceOf(Test);
+            await expect(toAsync(new Test())).eventually.instanceOf(Test);
         });
     });
 
     describe('.typeOf()', () => {
         it('should pass if the value is of the provided type', async () => {
-            await expectAsync(toAsync(13)).typeOf('number');
+            await expect(toAsync(13)).eventually.typeOf('number');
         });
     });
 
@@ -52,29 +58,18 @@ describe('expectAsync', () => {
         throw new Error('fail');
     }
 
-    describe('.resolves', () => {
-        it('should pass if the value resolves', async () => {
-            const ch = await expectAsync(toAsync(13)).resolves;
-            ch.eq(13);
-        });
-
-        it('should fail if the value rejects', async () => {
-            await expectFail(expectAsync(testRejects()).resolves);
-        });
-    });
-
     describe('.rejects()', () => {
         it('should pass if the value rejects', async () => {
-            await expectAsync(testRejects()).rejects();
+            await expect(testRejects()).eventually.rejects();
         });
 
         it('should catch rejection reason', async () => {
-            await expectAsync(testRejects()).rejects()
+            await expect(testRejects()).eventually.rejects()
                 .instanceOf(Error).prop('message').eq('fail');
         });
 
         it('should fail if the value resolves', async () => {
-            await expectFail(expectAsync(toAsync(13)).rejects());
+            await expectFail(expect(toAsync(13)).eventually.rejects());
         });
 
         it('should cleanup resolved value on failure', async () => {
@@ -85,25 +80,25 @@ describe('expectAsync', () => {
                 await setImmediate();
                 return awaited;
             }
-            await expectFail(expectAsync(testResolves()).rejects(v => v.clean = true));
+            await expectFail(expect(testResolves()).eventually.rejects(v => v.clean = true));
             expect(awaited.clean).eq(true);
         });
     });
 
     describe('.exist', () => {
         it('should pass if the value is neither null nor undefined', async () => {
-            await expectAsync(toAsync({})).exist;
+            await expect(toAsync({})).eventually.exist;
         });
 
         it('should fail if the value is null', async () => {
-            await expectFail(expectAsync(toAsync(null)).exist);
+            await expectFail(expect(toAsync(null)).eventually.exist);
         });
     });
 
-    describe('.then()', () => {
-        it('should resolve to Chifir', async () => {
-            const ch = await expectAsync(toAsync(13)).then();
-            ch.eq(13);
+    describe('.value', () => {
+        it('should return the fulfilled value', async () => {
+            const value = await expect(toAsync(13)).eventually.value;
+            expect(value).eq(13);
         });
     });
 });

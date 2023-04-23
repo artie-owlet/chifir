@@ -2,8 +2,9 @@ import {
     BrewGet, BrewCall, BrewGeneric, setupChifir,
     First, Rest,
     Ctor, TypeOfHelper,
-    prepareError,
+    prepareError, makeError,
 } from './brew';
+import { ChifirAsync, ChifirAsyncImpl } from './chifir-async';
 
 type ChifirFromBrew<T, CtxList extends unknown[]> = {
     [K in keyof BrewGet<T, CtxList>]: Chifir<BrewGet<T, CtxList>[K], CtxList>
@@ -12,7 +13,12 @@ type ChifirFromBrew<T, CtxList extends unknown[]> = {
         (...args: Parameters<BrewCall<T, CtxList>[K]>) => Chifir<ReturnType<BrewCall<T, CtxList>[K]>, CtxList>;
 };
 
-export class ChifirImpl<T, CtxList extends unknown[]> {
+export type StrictAwaited<T> =
+    T extends null | undefined ? never :
+        (T extends object & { then(onfulfilled: infer F, ...args: unknown[]): any } ?
+            (F extends ((value: infer V, ...args: unknown[]) => any) ? Awaited<V> : never) : never);
+
+class ChifirImpl<T, CtxList extends unknown[]> {
     constructor(
         public readonly value: T,
         public readonly ctxList: CtxList,
@@ -44,6 +50,17 @@ export class ChifirImpl<T, CtxList extends unknown[]> {
             this.ctxList,
         ) as Chifir<TypeOfHelper[K], CtxList>;
     }
+
+    public get eventually(): ChifirAsync<StrictAwaited<T>, []> {
+        if (!(typeof this.value === 'object' && this.value !== null &&
+            'then' in this.value && typeof this.value.then === 'function')) {
+            throw makeError(
+                prepareError(Object.getOwnPropertyDescriptor(ChifirImpl.prototype, 'eventually')?.get as Function),
+                'Not PromiseLike', this.value);
+        }
+        const pvalue = this.value as PromiseLike<StrictAwaited<T>>;
+        return new ChifirAsyncImpl(pvalue.then(v => [v, []])) as ChifirAsync<StrictAwaited<T>, []>;
+    }
 }
 
 setupChifir(ChifirImpl.prototype, (key) => {
@@ -67,7 +84,7 @@ setupChifir(ChifirImpl.prototype, (key) => {
     };
 });
 
-export type Chifir<T, CtxList extends unknown[]> = ChifirFromBrew<T, CtxList> & ChifirImpl<T, CtxList>;
+type Chifir<T, CtxList extends unknown[]> = ChifirFromBrew<T, CtxList> & ChifirImpl<T, CtxList>;
 
 export function expect<T>(value: T): Chifir<T, []> {
     return new ChifirImpl(value, []) as unknown as Chifir<T, []>;

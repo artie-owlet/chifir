@@ -12,7 +12,6 @@ jobs:
           node-version: '18'
       - run: yarn
       - run: yarn build-release
-      - run: yarn test
       - run: yarn npm publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

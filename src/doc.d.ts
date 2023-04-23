@@ -1,4 +1,5 @@
 import { First, Rest, Comparable, Ctor, TypeOfHelper } from './brew';
+import { StrictAwaited } from './chifir';
 
 /**
  * Assertion wrapper for the value
@@ -102,6 +103,11 @@ export declare class Chifir<T, CtxList extends unknown []> {
      * @param expected
      */
     typeOf<K extends keyof TypeOfHelper>(expected: K): Chifir<TypeOfHelper[K], CtxList>;
+
+    /**
+     * Entry point for asserting facts about promise-like values
+     */
+    eventually: ChifirAsync<StrictAwaited<T>, []>;
 }
 
 /**
@@ -188,34 +194,23 @@ export declare class ChifirAsync<T, CtxList extends unknown []> {
     typeOf<K extends keyof TypeOfHelper>(expected: K): ChifirAsync<TypeOfHelper[K], CtxList>;
 
     /**
-     * Asserts the value resolves
-     * @returns Chifir wrapper for the resolved value
-     */
-    resolves: PromiseLike<Chifir<T, CtxList>>;
-
-    /**
      * Asserts the value rejects
      * @param cleanUp Handle for the resolved value (if assertion failed)
      * @returns ChifirAsync wrapper for the rejection result
      */
     rejects(cleanUp?: (value: T) => void): ChifirAsync<unknown, []>;
 
-    then<TResult1 = Chifir<T, CtxList>, TResult2 = never>(
-        onfulfilled?: ((value: Chifir<T, CtxList>) => TResult1 | PromiseLike<TResult1>) | null,
-        onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    value: PromiseLike<T>;
+
+    then<TResult1 = unknown, TResult2 = never>(
+        onfulfilled?: ((value: unknown) => TResult1 | PromiseLike<TResult1>) | null,
+        onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
     ): PromiseLike<TResult1 | TResult2>;
 }
 
 /**
- * Entry point for assertion
+ * Entry point for assertions
  * @param value
  * @returns Chifir wrapper for `value`
  */
 export function expect<T>(value: T): Chifir<T, []>;
-
-/**
- * Entry point for assertion in async mode
- * @param pvalue
- * @returns ChifirAsync wrapper for `pvalue`
- */
-export function expectAsync<T>(pvalue: PromiseLike<T>): ChifirAsync<T, []>;

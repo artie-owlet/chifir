@@ -7,6 +7,11 @@
 
 Assertion library for Node.js.
 
+## Features
+
+* Better intellisense when using IDE like VS Code.
+* Typechecking in tests.
+
 ---
 
 ## Install
@@ -24,7 +29,7 @@ npm install -D @artie-owlet/chifir
 ## Usage
 
 ```ts
-import { expect, expectAsync } from '@artie-owlet/chifir';
+import { expect } from '@artie-owlet/chifir';
 
 import { testMe, Result } from '../src/api';
 import { probablyFail } from '../src/async-api';
@@ -38,7 +43,7 @@ describe('Test', () => {
     });
 
     it('should eventually fail', async () => {
-        await expectAsync(probablyFail()).rejects(res => res.clear())
+        await expect(probablyFail()).eventually.rejects(res => res.clear())
             .instanceOf(Error)
             .prop('message').eq('fail');
     });

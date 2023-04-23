@@ -4,7 +4,6 @@ import {
     Ctor, TypeOfHelper,
     prepareError, makeError,
 } from './brew';
-import { Chifir, ChifirImpl } from './chifir';
 
 type ChifirAsyncFromBrew<T, CtxList extends unknown[]> = {
     [K in keyof BrewGet<T, CtxList>]: ChifirAsync<BrewGet<T, CtxList>[K], CtxList>;
@@ -13,7 +12,7 @@ type ChifirAsyncFromBrew<T, CtxList extends unknown[]> = {
         (...args: Parameters<BrewCall<T, CtxList>[K]>) => ChifirAsync<ReturnType<BrewCall<T, CtxList>[K]>, CtxList>;
 };
 
-class ChifirAsyncImpl<T, CtxList extends unknown[]> {
+export class ChifirAsyncImpl<T, CtxList extends unknown[]> {
     constructor(
         public readonly pvalue: PromiseLike<[T, CtxList]>,
     ) {
@@ -61,14 +60,6 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
         ) as ChifirAsync<TypeOfHelper[K], CtxList>;
     }
 
-    public get resolves(): PromiseLike<Chifir<T, CtxList>> {
-        const err = prepareError(
-            Object.getOwnPropertyDescriptor(ChifirAsyncImpl.prototype, 'resolves')?.get as Function);
-        return this.then(c => c, (reason) => {
-            throw makeError(err, '.resolve()', reason);
-        });
-    }
-
     public rejects(cleanUp?: (value: T) => void): ChifirAsync<unknown, []> {
         const err = prepareError(this.rejects);
         return new ChifirAsyncImpl(this.pvalue.then(([value, _]) => {
@@ -81,15 +72,20 @@ class ChifirAsyncImpl<T, CtxList extends unknown[]> {
         })) as ChifirAsync<unknown, []>;
     }
 
-    public then<TResult1 = Chifir<T, CtxList>, TResult2 = never>(
-        onfulfilled?: ((value: Chifir<T, CtxList>) => TResult1 | PromiseLike<TResult1>) | null,
+    public get value(): PromiseLike<T> {
+        return this.pvalue.then(p => p[0]);
+    }
+
+    public then<TResult1 = void, TResult2 = never>(
+        onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
     ): PromiseLike<TResult1 | TResult2> {
-        return this.pvalue.then(([value, ctxList]) => {
+        return this.pvalue.then(() => {
             if (onfulfilled) {
-                return onfulfilled(new ChifirImpl(value, ctxList) as Chifir<T, CtxList>);
+                return onfulfilled();
             }
-            return new ChifirImpl(value, ctxList) as TResult1;
+            /* c8 ignore next */
+            return undefined as TResult1;
         }, onrejected);
     }
 }
@@ -121,8 +117,4 @@ setupChifir(ChifirAsyncImpl.prototype, (key) => {
     };
 });
 
-type ChifirAsync<T, CtxList extends unknown[]> = ChifirAsyncFromBrew<T, CtxList> & ChifirAsyncImpl<T, CtxList>;
-
-export function expectAsync<T>(pvalue: PromiseLike<T>): ChifirAsync<T, []> {
-    return new ChifirAsyncImpl(pvalue.then(v => [v, []])) as unknown as ChifirAsync<T, []>;
-}
+export type ChifirAsync<T, CtxList extends unknown[]> = ChifirAsyncFromBrew<T, CtxList> & ChifirAsyncImpl<T, CtxList>;
